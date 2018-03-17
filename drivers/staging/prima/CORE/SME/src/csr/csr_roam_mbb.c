@@ -458,11 +458,7 @@ eHalStatus csr_update_roamed_info_mbb(tHalHandle hal,
 
     /* Get profile */
     session = CSR_GET_SESSION(mac, sme_session_id);
-    if (session == NULL) {
-        smsLog(mac, LOGE,
-               FL("Invalid Session ID %d"), sme_session_id);
-        return eHAL_STATUS_FAILURE;
-    }
+
     profile = vos_mem_malloc(sizeof(*profile));
     if (NULL == profile) {
         smsLog(mac, LOGE, FL("Memory allocation failure for profile"));
