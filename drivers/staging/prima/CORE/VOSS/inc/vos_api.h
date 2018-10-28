@@ -479,13 +479,13 @@ VOS_STATUS vos_wlanReInit(void);
   Note that this API will not initiate any RIVA subsystem restart.
 
   @param
-       NONE
+       reason: vos_hang_reason
   @return
        VOS_STATUS_SUCCESS   - Operation completed successfully.
        VOS_STATUS_E_FAILURE - Operation failed.
 
 */
-VOS_STATUS vos_wlanRestart(void);
+VOS_STATUS vos_wlanRestart(enum vos_hang_reason reason);
 
 /**
   @brief vos_fwDumpReq()
