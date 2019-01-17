@@ -261,6 +261,7 @@ limSetRSNieWPAiefromSmeStartBSSReqMessage(tpAniSirGlobal pMac,
 {
     tANI_U8  wpaIndex = 0;
     tANI_U32 privacy, val;
+    tANI_U32 status;
 
     if (wlan_cfgGetInt(pMac, WNI_CFG_PRIVACY_ENABLED,
                   &privacy) != eSIR_SUCCESS)
@@ -335,7 +336,16 @@ limSetRSNieWPAiefromSmeStartBSSReqMessage(tpAniSirGlobal pMac,
                    LOG1,
                    FL("Only RSN IE is present"));
             dot11fUnpackIeRSN(pMac,&pRSNie->rsnIEdata[2],
+                              pRSNie->rsnIEdata[1],
                               (tANI_U8)pRSNie->length,&pSessionEntry->gStartBssRSNIe);
+            if (DOT11F_FAILED(status))
+            {
+                limLog(pMac,
+                       LOGE,FL("unpack failed for RSN IE (0x%08x)"),
+                       status);
+                return false;
+            }
+	    return true;
         }
         else if ((pRSNie->length == pRSNie->rsnIEdata[1] + 2) &&
                  (pRSNie->rsnIEdata[0] == SIR_MAC_WPA_EID))
@@ -345,7 +355,16 @@ limSetRSNieWPAiefromSmeStartBSSReqMessage(tpAniSirGlobal pMac,
                    FL("Only WPA IE is present"));
 
             dot11fUnpackIeWPA(pMac,&pRSNie->rsnIEdata[6],(tANI_U8)pRSNie->length-4,
+                              pRSNie->rsnIEdata[1] - 4,
                                 &pSessionEntry->gStartBssWPAIe);
+            if (DOT11F_FAILED(status))
+            {
+                limLog(pMac,
+                       LOGE,FL("unpack failed for WPA IE (0x%08x)"),
+                       status);
+                return false;
+            }
+	    return true;
         }
 
         // Check validity of WPA IE
@@ -372,10 +391,22 @@ limSetRSNieWPAiefromSmeStartBSSReqMessage(tpAniSirGlobal pMac,
                 /* Both RSN and WPA IEs are present */
                 dot11fUnpackIeRSN(pMac,&pRSNie->rsnIEdata[2],
                       (tANI_U8)pRSNie->length,&pSessionEntry->gStartBssRSNIe);
+                if (DOT11F_FAILED(status))
+                {
+                    limLog(pMac,LOGE,FL("unpack failed for RSN IE status:(0x%08x)"),
+                               status);
+                    return false;
+                }
 
                 dot11fUnpackIeWPA(pMac,&pRSNie->rsnIEdata[wpaIndex + 6],
                                  pRSNie->rsnIEdata[wpaIndex + 1]-4,
                                     &pSessionEntry->gStartBssWPAIe);
+                if (DOT11F_FAILED(status))
+                {
+                    limLog(pMac, LOGE,FL("unpack failed for WPA IE status:(0x%08x)"),
+                               status);
+                    return false;
+                }
 
             }
         }
@@ -671,6 +702,10 @@ limIsSmeJoinReqValid(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq)
     tANI_U8 valid = true;
 
 
+    //If force_rsne_override is enabled that mean User has provided the
+    //test RSNIE which need to be send as it is in assoc req and thus RSNIE
+    //validity is not required.
+    if (!pJoinReq->force_rsne_override &&
     if (!limIsRSNieValidInSmeReqMessage(pMac, &pJoinReq->rsnIE))
     {
         limLog(pMac, LOGE,
